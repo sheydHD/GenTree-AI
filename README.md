@@ -19,7 +19,7 @@ This project is a genealogy application that helps users manage and visualize th
 
 1. Clone the repository:
 ```
-git clone https://github.com/your-username/your-repository.git
+git clone https://github.com/sheydHD/GenTree-AI.git
 ```
 
 2. Navigate to the project directory:
