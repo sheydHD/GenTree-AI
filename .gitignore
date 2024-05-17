@@ -20,5 +20,6 @@ demo.py
 family_photos.db
 Backup/
 Data/Fonts_archiv/
+Data/Family_Members/
 helper_functions/Testing_functions/
 helper_functions/__pycache__/
