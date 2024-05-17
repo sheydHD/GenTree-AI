@@ -1,0 +1,9 @@
+{
+    "font_manager": {
+        "default_font": "Montserrat-SemiBold",
+        "font_size": 20
+    },
+    "style_editor": {
+        "mvStyleVar_FrameRounding": 5
+    }
+}
