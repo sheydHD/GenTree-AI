@@ -51,18 +51,22 @@ python main.py
 
 - Add New Photos:
   - Use add_new_photo.py to add photos of family members.
+
 ![image](https://github.com/sheydHD/GenTree-AI/assets/138871518/578ba2fb-6850-47bd-9091-0b09fd9a973f)
 
 - View Family Members:
   - Run open_my_family.py to see detailed information about family members.
+
 ![image](https://github.com/sheydHD/GenTree-AI/assets/138871518/cb19617c-40f3-4d9a-b791-2f0c878ea56e)
 
 - Visualize Family Tree:
   - Use open_my_gentree.py to visualize and navigate through the family tree.
+
 ![image](https://github.com/sheydHD/GenTree-AI/assets/138871518/05d3ef99-ab0b-4f8f-a014-3d2d6f1cdcd7)
 
 - Customize Settings:
   - Run open_settings.py to customize the application settings.
+
 ![image](https://github.com/sheydHD/GenTree-AI/assets/138871518/8b999bcb-9716-40ac-b687-ef78888e5d4d)
 
 ## Bonus
