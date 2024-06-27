@@ -62,7 +62,7 @@ python main.py
 - Visualize Family Tree:
   - Use open_my_gentree.py to visualize and navigate through the family tree.
 
-![image](https://github.com/sheydHD/GenTree-AI/assets/138871518/05d3ef99-ab0b-4f8f-a014-3d2d6f1cdcd7)
+![image](https://github.com/sheydHD/GenTree-AI/assets/138871518/6b96cdff-dad5-44bb-ad1c-00606203e3b0)
 
 - Customize Settings:
   - Run open_settings.py to customize the application settings.
