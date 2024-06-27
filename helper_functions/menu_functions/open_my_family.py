@@ -342,7 +342,10 @@ def update_member_details(member_id):
     new_connection = dpg.get_value(f"new_connection_{member_id}")
 
     if new_connection and new_connection != "None":
-        connected_to = int(new_connection.split("(ID: ")[1].split(")")[0])
+        try:
+            connected_to = int(new_connection.split("(ID: ")[1].split(")")[0])
+        except (IndexError, ValueError):
+            connected_to = None
     else:
         connected_to = None
 
@@ -367,7 +370,7 @@ def update_member_details(member_id):
         parent="my_family_window",
     )
 
-    # Remove the success message after 1 seconds
+    # Remove the success message after 1 second
     dpg.split_frame()
     time.sleep(1)
     dpg.delete_item(success_message)
