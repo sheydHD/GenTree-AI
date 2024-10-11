@@ -297,7 +297,10 @@ def load_settings(settings_file):
         except json.JSONDecodeError:
             # If the JSON file is empty or invalid, create a new settings file with default values
             default_settings = {
-                "font_manager": {"default_font": "Montserrat-SemiBold", "font_size": 20},
+                "font_manager": {
+                    "default_font": "Montserrat-SemiBold",
+                    "font_size": 20,
+                },
                 "style_editor": {"mvStyleVar_FrameRounding": 5},
             }
             with open(settings_file, "w") as file:

@@ -1,10 +1,17 @@
+# open_my_gentree.py
+
 import os
 import sqlite3
 import dearpygui.dearpygui as dpg
+from PIL import Image, ImageDraw
+import numpy as np
+import io
 
 # Specify the directory where the SQLite database will be created
 database_dir = os.getcwd()
 database_path = os.path.join(database_dir, "family_photos.db")
+
+texture_registry_tag = "global_texture_registry"
 
 
 class FamilyMember:
@@ -15,10 +22,16 @@ class FamilyMember:
         self.connected_to = connected_to
         self.x = 0
         self.y = 0
-        self.radius = 0
+        self.radius = 40  # Set a default radius
+        self.profile_photo = None  # Added to store profile photo
 
 
 def open_my_gentree(sender, app_data, user_data):
+    # Ensure the texture registry exists
+    if not dpg.does_item_exist(texture_registry_tag):
+        with dpg.texture_registry(tag=texture_registry_tag, show=False):
+            pass
+
     if dpg.does_item_exist("my_gentree_window"):
         dpg.focus_item("my_gentree_window")
     else:
@@ -38,14 +51,30 @@ def open_my_gentree(sender, app_data, user_data):
                 cursor.execute("SELECT id, name, role, connected_to FROM people")
                 family_members_data = cursor.fetchall()
 
+                # Create member_dict with default radius
                 member_dict = {
                     data[0]: FamilyMember(*data) for data in family_members_data
                 }
+
+                # Assign specific radii based on roles (if needed)
+                for member in member_dict.values():
+                    if member.role == "Me":
+                        member.radius = 50
+                    elif member.role in ["Mom", "Dad"]:
+                        member.radius = 40
+                    elif member.role in ["Brother", "Sister"]:
+                        member.radius = 30
+                    else:
+                        member.radius = 35  # Default for other roles
+
                 me_member = next(
                     (m for m in member_dict.values() if m.role == "Me"), None
                 )
 
                 if me_member:
+                    # Load profile photos for all members
+                    load_profile_photos(cursor, member_dict)
+
                     window_width = dpg.get_item_width("my_gentree_window")
                     window_height = dpg.get_item_height("my_gentree_window")
                     center_x = window_width // 2
@@ -59,17 +88,23 @@ def open_my_gentree(sender, app_data, user_data):
                     ):
                         me_member.x = center_x
                         me_member.y = top_y
-                        me_member.radius = 50
                         draw_family_circle(
                             me_member, "tree_drawlist", color=(255, 0, 0)
                         )
 
                         # Display siblings
-                        display_siblings(cursor, me_member, "tree_drawlist")
+                        display_siblings(
+                            cursor, me_member, "tree_drawlist", member_dict
+                        )
 
                         # Recursively display parents and their families
                         display_family_tree(
-                            cursor, me_member, "tree_drawlist", depth=0, is_root=True
+                            cursor,
+                            me_member,
+                            "tree_drawlist",
+                            member_dict,
+                            depth=0,
+                            is_root=True,
                         )
             finally:
                 conn.close()
@@ -79,6 +114,30 @@ def open_my_gentree(sender, app_data, user_data):
                 callback=lambda: dpg.delete_item("my_gentree_window"),
                 parent="my_gentree_window",
             )
+
+
+def load_profile_photos(cursor, member_dict):
+    for member in member_dict.values():
+        cursor.execute(
+            "SELECT photo FROM photos WHERE person_id = ? AND is_profile_photo = 1",
+            (member.id,),
+        )
+        result = cursor.fetchone()
+        if result:
+            photo_data = result[0]
+            # Convert the binary data to an image
+            image = Image.open(io.BytesIO(photo_data))
+            image = image.convert("RGBA")
+            # Resize the image to fit inside the circle
+            image_size = int(member.radius * 2)
+            image = image.resize((image_size, image_size), Image.LANCZOS)
+            # Create a circular mask
+            mask = Image.new("L", (image_size, image_size), 0)
+            draw = ImageDraw.Draw(mask)
+            draw.ellipse((0, 0, image_size, image_size), fill=255)
+            # Apply the mask to the image
+            image.putalpha(mask)
+            member.profile_photo = image
 
 
 def calculate_dynamic_spacing(depth):
@@ -94,16 +153,11 @@ def calculate_dynamic_spacing(depth):
     return base_branch_spacing + (depth * depth_spacing_factor)
 
 
-def calculate_fixed_spacing():
-    """
-    Calculate fixed spacing for parents.
-    :return: The fixed spacing for parents.
-    """
-    return 200
-
-
-def display_family_tree(cursor, member, parent, depth, is_root=False):
-    member_cog_y = member.y + 60
+def display_family_tree(cursor, member, parent, member_dict, depth, is_root=False):
+    # Approximate height of the name text, adjust as needed
+    name_height = 25
+    # Calculate member_cog_y considering the name height
+    member_cog_y = member.y + member.radius + name_height + 10  # Add some padding
 
     cursor.execute(
         "SELECT id, name, role, connected_to FROM people WHERE connected_to = ? AND role IN ('Mom', 'Dad')",
@@ -123,14 +177,14 @@ def display_family_tree(cursor, member, parent, depth, is_root=False):
 
     # Calculate spacing
     branch_spacing = calculate_dynamic_spacing(depth)
-    parent_y = member.y + 150
+    parent_y = member_cog_y + 150  # Adjusted parent Y position
     parent_cog_offset = -60
     parent_cog_y = parent_y + parent_cog_offset
 
     parent_positions = []
     for i, parent_data in enumerate(parents_data):
         parent_id, parent_name, parent_role, _ = parent_data
-        parent_member = FamilyMember(parent_id, parent_name, parent_role, member.id)
+        parent_member = member_dict[parent_id]
 
         # Use dynamic spacing for branches
         if parent_role == "Mom":
@@ -143,6 +197,7 @@ def display_family_tree(cursor, member, parent, depth, is_root=False):
         parent_positions.append((parent_member.x, parent_member.y))
         draw_family_circle(parent_member, parent, color=(255, 255, 0))
 
+        # Draw line from parent to parent_cog_y
         dpg.draw_line(
             (int(parent_member.x), int(parent_member.y - parent_member.radius)),
             (int(parent_member.x), int(parent_cog_y)),
@@ -151,7 +206,8 @@ def display_family_tree(cursor, member, parent, depth, is_root=False):
             parent=parent,
         )
 
-        display_family_tree(cursor, parent_member, parent, depth + 1)
+        display_family_tree(cursor, parent_member, parent, member_dict, depth + 1)
+        display_siblings(cursor, parent_member, parent, member_dict)
 
     if len(parents_data) > 1:
         parent_positions.sort()
@@ -166,14 +222,16 @@ def display_family_tree(cursor, member, parent, depth, is_root=False):
     else:
         parent_mid_x = parent_positions[0][0]
 
+    # Draw line from member to member_cog_y
     dpg.draw_line(
-        (int(member.x), int(member.y + member.radius)),
+        (int(member.x), int(member.y + member.radius + name_height)),
         (int(member.x), int(member_cog_y)),
         color=(255, 255, 255, 255),
         thickness=2,
         parent=parent,
     )
 
+    # Draw vertical line connecting member and parents
     dpg.draw_line(
         (int(member.x), int(member_cog_y)),
         (int(parent_mid_x), int(member_cog_y)),
@@ -191,9 +249,9 @@ def display_family_tree(cursor, member, parent, depth, is_root=False):
     )
 
 
-def display_siblings(cursor, member, parent):
+def display_siblings(cursor, member, parent, member_dict):
     cursor.execute(
-        "SELECT id, name, role, connected_to FROM people WHERE role IN ('Brother', 'Sister') AND connected_to = ?",
+        "SELECT id, name, role, connected_to FROM people WHERE connected_to = ? AND role IN ('Brother', 'Sister')",
         (member.id,),
     )
     siblings_data = cursor.fetchall()
@@ -213,7 +271,7 @@ def display_siblings(cursor, member, parent):
     sibling_positions = []
     for sibling_data in siblings_data:
         sibling_id, sibling_name, sibling_role, _ = sibling_data
-        sibling_member = FamilyMember(sibling_id, sibling_name, sibling_role, member.id)
+        sibling_member = member_dict[sibling_id]
         if sibling_role == "Sister":
             sibling_member.x = sister_x
             sister_x -= sibling_spacing
@@ -226,6 +284,7 @@ def display_siblings(cursor, member, parent):
         sibling_positions.append((sibling_member.x, sibling_member.y))
         draw_family_circle(sibling_member, parent, color=(0, 255, 0))
 
+        # Draw vertical line from sibling to cog_y
         dpg.draw_line(
             (int(sibling_member.x), int(sibling_member.y + sibling_member.radius)),
             (int(sibling_member.x), int(cog_y)),
@@ -236,16 +295,20 @@ def display_siblings(cursor, member, parent):
 
     if sibling_positions:
         sibling_positions.sort()
-        sibling_mid_x = sum(x for x, _ in sibling_positions) // len(sibling_positions)
+        leftmost_x = sibling_positions[0][0]
+        rightmost_x = sibling_positions[-1][0]
+
+        # Draw horizontal line connecting siblings at cog_y
         dpg.draw_line(
-            (int(sibling_positions[0][0]), int(cog_y)),
-            (int(sibling_positions[-1][0]), int(cog_y)),
+            (int(leftmost_x), int(cog_y)),
+            (int(rightmost_x), int(cog_y)),
             color=(255, 255, 255, 255),
             thickness=2,
             parent=parent,
         )
 
-    member_cog_y = member.y + cog_offset
+    # Draw line from "Me" to cog_y
+    member_cog_y = member.y + member.radius + 10  # Adjust as needed
     dpg.draw_line(
         (int(member.x), int(member.y + member.radius)),
         (int(member.x), int(member_cog_y)),
@@ -253,18 +316,22 @@ def display_siblings(cursor, member, parent):
         thickness=2,
         parent=parent,
     )
+    dpg.draw_line(
+        (int(member.x), int(member_cog_y)),
+        (int(member.x), int(cog_y)),
+        color=(255, 255, 255, 255),
+        thickness=2,
+        parent=parent,
+    )
 
-    if siblings_data:
+    # Draw horizontal line connecting "Me" to siblings at cog_y
+    if sibling_positions:
+        x_positions = [pos[0] for pos in sibling_positions] + [member.x]
+        leftmost_x = min(x_positions)
+        rightmost_x = max(x_positions)
         dpg.draw_line(
-            (int(member.x), int(member_cog_y)),
-            (int(member.x), int(cog_y)),
-            color=(255, 255, 255, 255),
-            thickness=2,
-            parent=parent,
-        )
-        dpg.draw_line(
-            (int(member.x), int(cog_y)),
-            (int(sibling_mid_x), int(cog_y)),
+            (int(leftmost_x), int(cog_y)),
+            (int(rightmost_x), int(cog_y)),
             color=(255, 255, 255, 255),
             thickness=2,
             parent=parent,
@@ -273,16 +340,8 @@ def display_siblings(cursor, member, parent):
     return True
 
 
-def count_family_members(cursor, member, role):
-    cursor.execute(
-        "SELECT COUNT(*) FROM people WHERE connected_to = ? AND role = ?",
-        (member.id, role),
-    )
-    count = cursor.fetchone()[0]
-    return count
-
-
 def draw_family_circle(member, parent, color):
+    # Draw the circle
     dpg.draw_circle(
         center=(int(member.x), int(member.y)),
         radius=int(member.radius),
@@ -290,10 +349,30 @@ def draw_family_circle(member, parent, color):
         fill=(*color[:3], 100),
         parent=parent,
     )
+    # Draw the profile photo if available
+    if member.profile_photo:
+        # Create a texture from the profile photo
+        texture_tag = f"profile_texture_{member.id}"
+        if not dpg.does_item_exist(texture_tag):
+            image = member.profile_photo
+            width, height = image.size
+            pixel_data = np.array(image).flatten() / 255.0
+            dpg.add_static_texture(
+                width, height, pixel_data, tag=texture_tag, parent=texture_registry_tag
+            )
+        # Draw the image inside the circle
+        dpg.draw_image(
+            texture_tag,
+            pmin=(int(member.x - member.radius), int(member.y - member.radius)),
+            pmax=(int(member.x + member.radius), int(member.y + member.radius)),
+            parent=parent,
+        )
+
+    # Draw the name below the circle
     text_width = dpg.get_text_size(member.name)[0]
     text_height = dpg.get_text_size(member.name)[1]
     text_x = int(member.x - text_width / 2)
-    text_y = int(member.y - text_height / 2)
+    text_y = int(member.y + member.radius + 5)  # Position the name below the circle
     dpg.draw_text(
         pos=(text_x, text_y),
         text=member.name,

@@ -1,17 +1,9 @@
+# logo.py
+
 import dearpygui.dearpygui as dpg
 import os
-
-# Get the directory of the main script
-main_directory = os.path.dirname(os.path.abspath(__name__))
-
-# Append the specific path to the cairo DLLs relative to the main_directory
-cairo_dll_path = os.path.join(main_directory, "env", "Lib", "site-packages", "cairo-windows-1.15.12", "lib", "x64")
-
-# Set the correct path to include Cairo DLLs in the environment variable
-os.environ["PATH"] += ";" + cairo_dll_path
-
-# Now you can import cairosvg or other libraries that depend on these DLLs
 import cairosvg
+
 
 def setup_logo(scale_factor=0.9):
     svg_file_path = "Data/Figures/GenTree_Logo.svg"
@@ -22,7 +14,7 @@ def setup_logo(scale_factor=0.9):
         cairosvg.svg2png(
             url=svg_file_path,
             write_to=png_file_path,
-            scale=scale_factor  # Apply the scaling factor
+            scale=scale_factor,  # Apply the scaling factor
         )
 
     if os.path.exists(png_file_path):
@@ -34,4 +26,3 @@ def setup_logo(scale_factor=0.9):
         return texture_id, width, height
 
     return None, 0, 0  # In case of errors
-

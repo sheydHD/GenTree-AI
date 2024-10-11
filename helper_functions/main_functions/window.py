@@ -1,3 +1,5 @@
+# window.py
+
 import dearpygui.dearpygui as dpg
 from helper_functions.main_functions.logo import setup_logo
 from helper_functions.main_functions.menu import setup_buttons

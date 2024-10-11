@@ -1,20 +1,36 @@
+# add_new_photo.py
 import dearpygui.dearpygui as dpg
 import os
 import sqlite3
 import time
 from tkinter import Tk
-from tkinter.filedialog import askopenfilename, askopenfilenames
+from tkinter.filedialog import askopenfilename
 import cv2
 import face_recognition
 import numpy as np
-
-
-# database_path = os.path.join("C:\\sqlite", "family_photos.db")
+from PIL import Image
+import io
 
 # Specify the directory where the SQLite database will be created
 database_dir = os.getcwd()
 database_path = os.path.join(database_dir, "family_photos.db")
 conn = sqlite3.connect(database_path)
+
+
+# Modify the database schema to add 'is_profile_photo' column
+def modify_database_schema():
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "ALTER TABLE photos ADD COLUMN is_profile_photo INTEGER DEFAULT 0"
+        )
+    except sqlite3.OperationalError:
+        # Column already exists
+        pass
+    conn.commit()
+
+
+modify_database_schema()
 
 
 def add_new_photo(sender, app_data, user_data):
@@ -129,17 +145,18 @@ def recognize_person(file_path):
         photo = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
         # Generate face encoding for the photo
-        face_encoding = face_recognition.face_encodings(photo)[0]
-
-        if name not in known_faces:
-            known_faces[name] = []
-        known_faces[name].append(face_encoding)
+        face_encodings = face_recognition.face_encodings(photo)
+        if face_encodings:
+            face_encoding = face_encodings[0]
+            if name not in known_faces:
+                known_faces[name] = []
+            known_faces[name].append(face_encoding)
 
     # Close the SQLite connection
     conn.close()
 
     # Read the input photo
-    input_photo = cv2.imread(file_path)
+    input_photo = face_recognition.load_image_file(file_path)
 
     # Find all face locations in the input photo
     face_locations = face_recognition.face_locations(input_photo)
@@ -169,12 +186,32 @@ def confirm_person(file_path, person_name):
     with open(file_path, "rb") as file:
         photo_data = file.read()
 
+    # Insert the original photo
     cursor.execute(
         "INSERT INTO photos (person_id, photo) VALUES (?, ?)", (person_id, photo_data)
     )
-    conn.commit()
 
-    # Close the SQLite connection
+    # Check if the person already has a profile photo
+    cursor.execute(
+        "SELECT COUNT(*) FROM photos WHERE person_id = ? AND is_profile_photo = 1",
+        (person_id,),
+    )
+    has_profile_photo = cursor.fetchone()[0] > 0
+
+    if not has_profile_photo:
+        # Process the photo to extract the face
+        face_photo_data = process_photo_to_extract_face(file_path)
+        if face_photo_data:
+            # Insert the face photo as the profile photo
+            cursor.execute(
+                "INSERT INTO photos (person_id, photo, is_profile_photo) VALUES (?, ?, 1)",
+                (person_id, face_photo_data),
+            )
+        else:
+            # Inform the user that no face was detected
+            dpg.add_text("No face detected in the photo.", parent="Primary Window")
+
+    conn.commit()
     conn.close()
 
     # Close the confirmation window
@@ -189,6 +226,36 @@ def confirm_person(file_path, person_name):
     dpg.split_frame()
     time.sleep(1)
     dpg.delete_item(success_message)
+
+
+def process_photo_to_extract_face(file_path):
+    # Load the image
+    image = face_recognition.load_image_file(file_path)
+    # Find face locations
+    face_locations = face_recognition.face_locations(image)
+    if face_locations:
+        # Take the first face location
+        top, right, bottom, left = face_locations[0]
+        # Add margin
+        margin = 30  # Increased from 20 to 30
+        # Ensure the new coordinates are within image bounds
+        top = max(0, top - margin)
+        right = min(image.shape[1], right + margin)
+        bottom = min(image.shape[0], bottom + margin)
+        left = max(0, left - margin)
+        # Crop the image to the face with margin
+        face_image = image[top:bottom, left:right]
+        # Convert the image to bytes
+        pil_image = Image.fromarray(face_image)
+        # Resize the image to a standard size, e.g., 100x100
+        pil_image = pil_image.resize((100, 100), Image.LANCZOS)
+        # Save the image to bytes
+        img_byte_arr = io.BytesIO()
+        pil_image.save(img_byte_arr, format="PNG")
+        face_photo_data = img_byte_arr.getvalue()
+        return face_photo_data
+    else:
+        return None
 
 
 def handle_already_in_family(file_path):
@@ -235,13 +302,29 @@ def store_photo_in_database(file_path, member_id, member_name):
     with open(file_path, "rb") as file:
         photo_data = file.read()
 
-    # Insert the photo into the photos table
+    # Insert the original photo
     cursor.execute(
         "INSERT INTO photos (person_id, photo) VALUES (?, ?)", (member_id, photo_data)
     )
-    conn.commit()
 
-    # Close the SQLite connection
+    # Check if the person already has a profile photo
+    cursor.execute(
+        "SELECT COUNT(*) FROM photos WHERE person_id = ? AND is_profile_photo = 1",
+        (member_id,),
+    )
+    has_profile_photo = cursor.fetchone()[0] > 0
+
+    if not has_profile_photo:
+        # Process the photo to extract the face
+        face_photo_data = process_photo_to_extract_face(file_path)
+        if face_photo_data:
+            # Insert the face photo as the profile photo
+            cursor.execute(
+                "INSERT INTO photos (person_id, photo, is_profile_photo) VALUES (?, ?, 1)",
+                (member_id, face_photo_data),
+            )
+
+    conn.commit()
     conn.close()
 
     # Close the "Select Family Member" window
@@ -377,13 +460,22 @@ def create_new_person_in_database(file_path, name, role, connected_to):
     with open(file_path, "rb") as file:
         photo_data = file.read()
 
-    # Insert the photo into the photos table
+    # Insert the original photo
     cursor.execute(
-        "INSERT INTO photos (person_id, photo) VALUES (?, ?)", (person_id, photo_data)
+        "INSERT INTO photos (person_id, photo) VALUES (?, ?)",
+        (person_id, photo_data),
     )
-    conn.commit()
 
-    # Close the SQLite connection
+    # Process the photo to extract the face
+    face_photo_data = process_photo_to_extract_face(file_path)
+    if face_photo_data:
+        # Insert the face photo as the profile photo
+        cursor.execute(
+            "INSERT INTO photos (person_id, photo, is_profile_photo) VALUES (?, ?, 1)",
+            (person_id, face_photo_data),
+        )
+
+    conn.commit()
     conn.close()
 
     # Close the "Enter Name" window

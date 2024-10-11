@@ -1,4 +1,5 @@
 # main.py
+
 import dearpygui.dearpygui as dpg
 import os
 import json
@@ -13,6 +14,10 @@ USER_SETTINGS_FILE = "Data/Settings/user_settings.json"
 
 def main():
     dpg.create_context()
+
+    # Ensure the database is created before any other operations
+    create_database()
+
     dpg.create_viewport(title="GenTree", width=1920, height=1080)
     dpg.setup_dearpygui()
 
@@ -35,9 +40,6 @@ def main():
     )
     font = load_fonts()
     setup_window(font)
-
-    # Ensure the database is created
-    create_database()
 
     dpg.show_viewport()
     dpg.set_primary_window("Primary Window", True)
