@@ -20,16 +20,13 @@ jobs:
         auto-update-conda: true
         python-version: '3.12.4'
 
-    - name: Initialize Conda and Activate Base Environment
-      shell: bash -l {0}
+    - name: Initialize Conda, Install Dependencies, and Run Program
+      shell: bash -l {0}  # Ensures the environment is loaded correctly
       run: |
         conda init bash
         source ~/.bashrc
         conda activate base
         pip install -r requirements.txt  # Install dependencies using pip
-
-    - name: Run the program
-      run: |
         python main.py  # Run the main Python program
 
     - name: Lint with flake8
