@@ -20,15 +20,11 @@ jobs:
         auto-update-conda: true
         python-version: '3.12.4'
 
-    - name: Initialize Conda
+    - name: Initialize Conda and Activate Base Environment
+      shell: bash -l {0}
       run: |
         conda init bash
         source ~/.bashrc
-        conda config --set always_yes yes --set changeps1 no
-        conda info -a  # Useful for debugging any issues with conda
-
-    - name: Activate base environment and install dependencies
-      run: |
         conda activate base
         conda install --file requirements.txt
 
