@@ -16,6 +16,7 @@ This project is a genealogy application that helps users manage and visualize th
 
 - Python 3.6 or above
 - Additional Python packages (specified in `requirements.txt`)
+- Anaconda base 
 
 ## Installation
 
@@ -29,7 +30,12 @@ git clone https://github.com/sheydHD/GenTree-AI.git
 cd your-repository
 ```
 
-3. Install the required dependencies:
+3. Activate conda base 
+```
+conda activate base
+```
+
+4. Install the required dependencies:
 ```
 pip install -r requirements.txt
 ```
@@ -38,7 +44,6 @@ pip install -r requirements.txt
 
 Prepare your environment:
 1. Ensure you have all the dependencies installed.
-2. Set up your database and add initial data if necessary.
 
 ## Run the application:
 ```
@@ -47,22 +52,29 @@ python main.py
 
 ## Application functionalities:
 - Create a Database:
-  - Run create_database.py to set up a new genealogy database.
+  - The code creates a database with SQLite where you will store photos of your family members.
 
 - Add New Photos:
   - Use add_new_photo.py to add photos of family members.
 
-![image](https://github.com/sheydHD/GenTree-AI/assets/138871518/578ba2fb-6850-47bd-9091-0b09fd9a973f)
+![image](https://github.com/user-attachments/assets/ee4217cd-b4d6-4a73-90a5-f900a3894905)
 
 - View Family Members:
   - Run open_my_family.py to see detailed information about family members.
 
-![image](https://github.com/sheydHD/GenTree-AI/assets/138871518/cb19617c-40f3-4d9a-b791-2f0c878ea56e)
+![image](https://github.com/user-attachments/assets/75ce39c4-2570-434b-9ea1-95a0b3f3d889)
+
+- Menage Family Member Library: 
+  - Modify family members or open a library of family members, to remove photos.
+
+![image](https://github.com/user-attachments/assets/d588d569-dc99-4596-a990-337cdf43fe98)
 
 - Visualize Family Tree:
   - Use open_my_gentree.py to visualize and navigate through the family tree.
 
 ![image](https://github.com/sheydHD/GenTree-AI/assets/138871518/6b96cdff-dad5-44bb-ad1c-00606203e3b0)
+
+![image](https://github.com/user-attachments/assets/02228d1c-b755-4227-af17-57de33f7ab52)
 
 - Customize Settings:
   - Run open_settings.py to customize the application settings.
