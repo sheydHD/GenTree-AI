@@ -20,13 +20,19 @@ jobs:
         auto-update-conda: true
         python-version: '3.12.4'
 
-    - name: Initialize Conda, Install Dependencies, and Run Program
-      shell: bash -l {0}  # Ensures the environment is loaded correctly
+    - name: Install Xvfb (Virtual Display)
+      run: sudo apt-get install -y xvfb
+
+    - name: Run Program with Xvfb
+      shell: bash -l {0}
       run: |
         conda init bash
         source ~/.bashrc
         conda activate base
         pip install -r requirements.txt  # Install dependencies using pip
+        # Start Xvfb to provide a virtual display
+        Xvfb :99 & 
+        export DISPLAY=:99
         python main.py  # Run the main Python program
 
     - name: Lint with flake8
