@@ -26,11 +26,11 @@ jobs:
         conda init bash
         source ~/.bashrc
         conda activate base
-        conda install --file requirements.txt
+        pip install -r requirements.txt  # Install dependencies using pip
 
     - name: Run the program
       run: |
-        python main.py
+        python main.py  # Run the main Python program
 
     - name: Lint with flake8
       run: |
