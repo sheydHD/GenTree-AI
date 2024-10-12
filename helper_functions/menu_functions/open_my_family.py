@@ -483,11 +483,6 @@ def close_member_window(member_id):
 
 
 def remove_photo(member_id, photo_id):
-    # Display a message and spinner to the user
-    with dpg.group(tag="processing_group", parent="Primary Window"):
-        dpg.add_text("Analyzing photo, please wait...")
-        dpg.add_spinner(radius=10.0, thickness=4.0)
-
     # Create a new SQLite connection and cursor within this function
     conn = sqlite3.connect(database_path)
     cursor = conn.cursor()
