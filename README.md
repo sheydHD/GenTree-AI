@@ -69,6 +69,10 @@ python main.py
 
 ![image](https://github.com/user-attachments/assets/d588d569-dc99-4596-a990-337cdf43fe98)
 
+- Automated Profile Photo Creation:
+  - The code automatically creates a copy of the first found photo of each family member extracting only the face to display it in the GenTree.
+![image](https://github.com/user-attachments/assets/a8c1af78-d299-42ad-8f32-ae2374915614)
+
 - Visualize Family Tree:
   - Use open_my_gentree.py to visualize and navigate through the family tree.
 
