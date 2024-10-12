@@ -56,6 +56,13 @@ python main.py
 
 - Add New Photos:
   - Use add_new_photo.py to add photos of family members.
+  - Either create a new member and fit in the role in your family,
+
+![image](https://github.com/user-attachments/assets/a6a0b097-e87e-4e6f-b1be-b0ca5c8731f3)
+
+![image](https://github.com/user-attachments/assets/37ab1727-128e-48a5-bffb-2796d4e774e9)
+
+  - Or the code will automatically detect the person in your family tree.
 
 ![image](https://github.com/user-attachments/assets/ee4217cd-b4d6-4a73-90a5-f900a3894905)
 
