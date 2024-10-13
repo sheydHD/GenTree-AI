@@ -3,6 +3,7 @@
 import dearpygui.dearpygui as dpg
 import os
 import json
+import threading  # Import threading for the timer
 from helper_functions.main_functions.window import setup_window
 from helper_functions.main_functions.fonts import load_fonts
 from helper_functions.menu_functions.open_settings import load_settings
@@ -11,21 +12,15 @@ from helper_functions.create_database import create_database
 DEFAULT_SETTINGS_FILE = "Data/Settings/default_settings.json"
 USER_SETTINGS_FILE = "Data/Settings/user_settings.json"
 
-
 def main():
     dpg.create_context()
-
-    # Ensure the database is created before any other operations
     create_database()
-
     dpg.create_viewport(title="GenTree", width=1920, height=1080)
     dpg.setup_dearpygui()
 
-    # Create the "Data/Settings" directory if it doesn't exist
     os.makedirs("Data/Settings", exist_ok=True)
 
     if not os.path.exists(DEFAULT_SETTINGS_FILE):
-        # Create the default settings file if it doesn't exist
         default_settings = {
             "font_manager": {"default_font": "Montserrat-SemiBold", "font_size": 20},
             "style_editor": {"mvStyleVar_FrameRounding": 5},
@@ -44,9 +39,19 @@ def main():
     dpg.show_viewport()
     dpg.set_primary_window("Primary Window", True)
     dpg.maximize_viewport()
+
+    # Check if running in CI
+    is_ci = os.environ.get("GITHUB_ACTIONS") == "true"
+    if is_ci:
+        # Close the app after 5 seconds
+        def close_app():
+            print("Closing app automatically in CI environment.")
+            dpg.stop_dearpygui()
+
+        threading.Timer(5, close_app).start()
+
     dpg.start_dearpygui()
     dpg.destroy_context()
-
 
 if __name__ == "__main__":
     main()
