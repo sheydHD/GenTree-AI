@@ -23,7 +23,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        conda run -n test-env pip install -r requirements.txt
+        conda run -n test-env pip install -r ./requirements.txt
 
     - name: Run Program in CI Mode
       run: |
