@@ -27,11 +27,13 @@ jobs:
       shell: bash -l {0}
       run: |
         conda init bash
-        source ~/.bashrc
+        source ~/.bashrc  # Reload the shell
 
     - name: Create and activate environment
+      shell: bash -l {0}  # Ensure shell is reloaded
       run: |
         conda create --name test-env python=3.12.4 -y
+        source ~/.bashrc  # Source again to ensure environment is available
         conda activate test-env
 
     - name: Install dependencies
