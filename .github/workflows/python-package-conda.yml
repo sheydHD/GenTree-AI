@@ -9,11 +9,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up Python 3.12.4
-      uses: actions/setup-python@v3
-      with:
-        python-version: '3.12.4'
-
     - name: Install Miniconda
       uses: conda-incubator/setup-miniconda@v2
       with:
@@ -23,34 +18,27 @@ jobs:
     - name: Install Xvfb (Virtual Display)
       run: sudo apt-get install -y xvfb
 
-    - name: Initialize Conda (shell configuration)
-      run: |
-        conda init bash
-        source ~/.bashrc
-
-    - name: Create and activate environment
-      run: |
-        conda create --name test-env python=3.12.4 -y
-        conda activate test-env
+    - name: Create environment
+      run: conda create --name test-env python=3.12.4 -y
 
     - name: Install dependencies
       run: |
         conda run -n test-env pip install -r requirements.txt
-    
+
     - name: Run Program in CI Mode
       run: |
         export GITHUB_ACTIONS=true
         Xvfb :99 &
         export DISPLAY=:99
         conda run -n test-env python -u main.py
-    
+
     - name: Install Flake8
       run: conda install -n test-env flake8 -y
-    
+
     - name: Lint with flake8
       run: |
         conda run -n test-env flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         conda run -n test-env flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    
+
     - name: Test with pytest
       run: conda run -n test-env pytest
