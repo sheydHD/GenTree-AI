@@ -22,8 +22,11 @@ jobs:
       run: conda create --name test-env python=3.12.4 -y
 
     - name: Install dependencies
+      run: conda run -n test-env pip install -r requirements.txt
+
+    - name: Install Flake8 and Pytest
       run: |
-        conda run -n test-env pip install -r ./requirements.txt
+        conda install -n test-env flake8 pytest -y
 
     - name: Run Program in CI Mode
       run: |
@@ -31,9 +34,6 @@ jobs:
         Xvfb :99 &
         export DISPLAY=:99
         conda run -n test-env python -u main.py
-
-    - name: Install Flake8
-      run: conda install -n test-env flake8 -y
 
     - name: Lint with flake8
       run: |
