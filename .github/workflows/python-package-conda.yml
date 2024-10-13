@@ -23,31 +23,44 @@ jobs:
     - name: Install Xvfb (Virtual Display)
       run: sudo apt-get install -y xvfb
 
-    - name: Run Program in CI Mode
+    - name: Initialize Conda (shell configuration)
       shell: bash -l {0}
       run: |
         conda init bash
         source ~/.bashrc
-        conda activate base
-        pip install -r requirements.txt  # Install dependencies using pip
-        # Set GITHUB_ACTIONS environment variable and run the main.py program
+
+    - name: Create and activate environment
+      run: |
+        conda create --name test-env python=3.12.4 -y
+        conda activate test-env
+
+    - name: Install dependencies
+      run: |
+        conda activate test-env
+        pip install -r requirements.txt
+
+    - name: Run Program in CI Mode
+      shell: bash -l {0}
+      run: |
+        conda activate test-env
         export GITHUB_ACTIONS=true
-        Xvfb :99 &  # Run virtual display
+        Xvfb :99 &
         export DISPLAY=:99
         python -u main.py
 
     - name: Install Flake8
       run: |
-        conda install flake8
+        conda activate test-env
+        conda install flake8 -y
 
     - name: Lint with flake8
       shell: bash -l {0}
       run: |
-        conda activate base
+        conda activate test-env
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
     - name: Test with pytest
       run: |
-        conda activate base
+        conda activate test-env
         pytest
