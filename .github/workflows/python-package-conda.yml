@@ -1,0 +1,35 @@
+name: Python Package using Conda
+
+on: [push]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Miniconda
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        auto-update-conda: true
+        environment-file: environment.yml
+        activate-environment: test-env
+
+    - name: Install Xvfb (Virtual Display)
+      run: sudo apt-get install -y xvfb
+
+    - name: Run Program in CI Mode
+      run: |
+        Xvfb :99 &
+        export DISPLAY=:99
+        conda run -n test-env python -u main.py
+
+    - name: Lint with flake8
+      run: |
+        conda run -n test-env flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        conda run -n test-env flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    - name: Test with pytest
+      run: |
+        conda run -n test-env pytest
