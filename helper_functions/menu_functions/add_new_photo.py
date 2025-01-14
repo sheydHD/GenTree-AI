@@ -37,7 +37,8 @@ def add_new_photo(sender, app_data, user_data):
     # Open a file dialog to select a photo
     root = Tk()
     root.withdraw()  # Hide the main tkinter window
-    file_path = askopenfilename(filetypes=[("Image Files", "*.png;*.jpg;*.jpeg")])
+    # file_path = askopenfilename(filetypes=[("Image Files", "*.png;*.jpg;*.jpeg")])
+    file_path = askopenfilename(filetypes=[("Image Files", "*.png *.jpg *.jpeg")])
 
     if file_path:
         # Show the "Analyzing photo" popup
